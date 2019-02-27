@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using eQuantic.Core.Ioc.Compiler;
+using eQuantic.Core.Ioc.Conventions;
 using eQuantic.Core.Ioc.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,7 +22,8 @@ namespace eQuantic.Core.Ioc.Scanning
 
         public string Description { get; set; }
         public Task<TypeSet> TypeFinder => _typeFinder;
-
+        public List<IRegistrationConvention> Conventions { get; } = new List<IRegistrationConvention>();
+        
         public AssemblyScanner(IServiceCollection services)
         {
             _services = services;
@@ -44,17 +46,44 @@ namespace eQuantic.Core.Ioc.Scanning
             Assembly(AssemblyLoader.ByName(assemblyName));
         }
 
+        public void Convention<T>() where T : IRegistrationConvention, new()
+        {
+            var previous = Conventions.FirstOrDefault(scanner => scanner is T);
+            if (previous == null)
+                With(new T());
+        }
+
+        public void RegisterConcreteTypesAgainstTheFirstInterface()
+        {
+            var convention = new FirstInterfaceConvention();
+            With(convention);
+        }
+
         public void Describe(StringWriter writer)
         {
             writer.WriteLine(Description);
             writer.WriteLine("Assemblies");
             writer.WriteLine("----------");
 
-            var ass = _assemblies.OrderBy(x => x.FullName);
-            foreach (var a in ass)
-            {
-                writer.WriteLine("* " + a);
-            }
+            _assemblies.OrderBy(x => x.FullName).Each(x => writer.WriteLine("* " + x));
+            writer.WriteLine();
+
+            writer.WriteLine("Conventions");
+            writer.WriteLine("--------");
+            Conventions.Each(x => writer.WriteLine("* " + x));
+        }
+
+        public FindAllTypesFilter AddAllTypesOf<TPluginType>()
+        {
+            return AddAllTypesOf(typeof(TPluginType));
+        }
+
+        public FindAllTypesFilter AddAllTypesOf(Type pluginType)
+        {
+            var filter = new FindAllTypesFilter(pluginType);
+            With(filter);
+
+            return filter;
         }
 
         public void Exclude(Func<Type, bool> exclude)
@@ -99,6 +128,16 @@ namespace eQuantic.Core.Ioc.Scanning
                 .Any(aName => aName.Name == assemblyName);
         }
 
+        public void With(IRegistrationConvention convention)
+        {
+            Conventions.Fill(convention);
+        }
+
+        public void ConnectImplementationsToTypesClosing(Type openGenericType)
+        {
+            var convention = new GenericConnectionScanner(openGenericType);
+            With(convention);
+        }
 
         public void TheCallingAssembly()
         {

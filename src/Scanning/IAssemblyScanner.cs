@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using eQuantic.Core.Ioc.Conventions;
 
 namespace eQuantic.Core.Ioc.Scanning
 {
@@ -34,6 +35,18 @@ namespace eQuantic.Core.Ioc.Scanning
         /// <param name="type"></param>
         void AssemblyContainingType(Type type);
 
+        /// <summary>
+        /// Add all concrete types of the Plugin Type as Instances of Plugin Type
+        /// </summary>
+        /// <typeparam name="TPluginType"></typeparam>
+        FindAllTypesFilter AddAllTypesOf<TPluginType>();
+
+        /// <summary>
+        /// Add all concrete types of the Plugin Type as Instances of Plugin Type
+        /// </summary>
+        /// <param name="pluginType"></param>
+        FindAllTypesFilter AddAllTypesOf(Type pluginType);
+        
         /// <summary>
         /// Exclude types that match the Predicate from being scanned
         /// </summary>
@@ -79,6 +92,25 @@ namespace eQuantic.Core.Ioc.Scanning
         /// <typeparam name="T"></typeparam>
         void ExcludeType<T>();
 
+        /// <summary>
+        /// Adds a registration convention to be applied to all the types in this
+        /// logical "scan" operation
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        void Convention<T>() where T : IRegistrationConvention, new();
+
+        /// <summary>
+        /// Adds a registration convention to be applied to all the types in this
+        /// logical "scan" operation
+        /// </summary>
+        void With(IRegistrationConvention convention);
+
+        /// <summary>
+        /// Automatically registers all concrete types without primitive arguments
+        /// against its first interface, if any
+        /// </summary>
+        void RegisterConcreteTypesAgainstTheFirstInterface();
+        
         void TheCallingAssembly();
         void AssembliesFromApplicationBaseDirectory();
         void AssembliesFromApplicationBaseDirectory(Func<Assembly, bool> assemblyFilter);
