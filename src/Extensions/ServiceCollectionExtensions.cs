@@ -1,5 +1,8 @@
 using System;
+using System.Linq;
+using eQuantic.Core.Ioc.Conventions;
 using eQuantic.Core.Ioc.Scanning;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -16,6 +19,20 @@ namespace Microsoft.Extensions.DependencyInjection
             var descriptor = ServiceDescriptor.Singleton(finder);
             services.Add(descriptor);
             return services;
+        }
+
+        public static ConnectedConcretions ConnectedConcretions(this IServiceCollection services)
+        {
+            var concretions = services.FirstOrDefault(x => x.ServiceType == typeof(ConnectedConcretions))
+                ?.ImplementationInstance as ConnectedConcretions;
+
+            if (concretions == null)
+            {
+                concretions = new ConnectedConcretions();
+                services.AddSingleton(concretions);
+            }
+
+            return concretions;
         }
     }
 }
