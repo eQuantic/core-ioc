@@ -11,5 +11,6 @@ namespace eQuantic.Core.Ioc.Conventions
     {
         void ScanTypes(TypeSet types, IServiceCollection services);
     }
+
     // ENDSAMPLE
 }

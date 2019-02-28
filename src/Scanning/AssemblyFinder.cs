@@ -3,22 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using eQuantic.Core.Ioc.Compiler;
 
 namespace eQuantic.Core.Ioc.Scanning
 {
     public static class AssemblyFinder
     {
-        internal static class AssemblyContext
-        {
-#if NET461
-		public static readonly IAssemblyLoadContext Loader = new CustomAssemblyLoadContext();
-#else
-            public static readonly IAssemblyLoadContext Loader = new AssemblyLoadContextWrapper(System.Runtime.Loader.AssemblyLoadContext.Default);
-#endif
-        }
-
         public static IEnumerable<Assembly> FindAssemblies(Action<string> logFailure, bool includeExeFiles)
         {
             string path;
@@ -87,6 +77,15 @@ namespace eQuantic.Core.Ioc.Scanning
             }
 
             return FindAssemblies(file => { }, includeExeFiles: includeExeFiles).Where(filter);
+        }
+
+        internal static class AssemblyContext
+        {
+#if NET461
+		    public static readonly IAssemblyLoadContext Loader = new CustomAssemblyLoadContext();
+#else
+            public static readonly IAssemblyLoadContext Loader = new AssemblyLoadContextWrapper(System.Runtime.Loader.AssemblyLoadContext.Default);
+#endif
         }
     }
 }

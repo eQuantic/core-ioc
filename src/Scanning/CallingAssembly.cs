@@ -8,11 +8,17 @@ namespace eQuantic.Core.Ioc.Scanning
 {
     public class CallingAssembly
     {
+        private static readonly IList<string> _misses = new List<string>();
+
+        public static Assembly DetermineApplicationAssembly(object registry)
+        {
+            var assembly = registry.GetType().Assembly;
+            return assembly.HasAttribute<IgnoreAssemblyAttribute>() ? CallingAssembly.Find() : assembly;
+        }
+
         internal static Assembly Find()
         {
             string trace = Environment.StackTrace;
-
-
 
             var parts = trace.Split('\n');
 
@@ -28,17 +34,6 @@ namespace eQuantic.Core.Ioc.Scanning
 
             return null;
         }
-
-        private static bool isSystemAssembly(Assembly assembly)
-        {
-            if (assembly == null) return false;
-
-            if (assembly.GetCustomAttributes<IgnoreAssemblyAttribute>().Any()) return true;
-
-            return assembly.GetName().Name.StartsWith("System.");
-        }
-
-        private static readonly IList<string> _misses = new List<string>();
 
         private static Assembly findAssembly(string stacktraceLine)
         {
@@ -57,7 +52,6 @@ namespace eQuantic.Core.Ioc.Scanning
 
                 try
                 {
-
                     assembly = Assembly.Load(new AssemblyName(possibility));
                     break;
                 }
@@ -70,10 +64,13 @@ namespace eQuantic.Core.Ioc.Scanning
             return assembly;
         }
 
-        public static Assembly DetermineApplicationAssembly(object registry)
+        private static bool isSystemAssembly(Assembly assembly)
         {
-            var assembly = registry.GetType().Assembly;
-            return assembly.HasAttribute<IgnoreAssemblyAttribute>() ? CallingAssembly.Find() : assembly;
+            if (assembly == null) return false;
+
+            if (assembly.GetCustomAttributes<IgnoreAssemblyAttribute>().Any()) return true;
+
+            return assembly.GetName().Name.StartsWith("System.");
         }
     }
 }

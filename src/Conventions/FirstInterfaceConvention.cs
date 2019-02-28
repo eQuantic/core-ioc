@@ -19,7 +19,6 @@ namespace eQuantic.Core.Ioc.Conventions
                     services.TryAddTransient(interfaceType, type);
                 }
             }
-
         }
 
         public override string ToString()

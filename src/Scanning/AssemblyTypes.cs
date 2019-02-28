@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using eQuantic.Core.Ioc.Extensions;
 
 namespace eQuantic.Core.Ioc.Scanning
 {
     public class AssemblyScanRecord
     {
-        public string Name;
         public Exception LoadException;
+        public string Name;
 
         public override string ToString()
         {
@@ -21,8 +19,9 @@ namespace eQuantic.Core.Ioc.Scanning
 
     public class AssemblyTypes
     {
+        public readonly AssemblyShelf ClosedTypes = new AssemblyShelf();
+        public readonly AssemblyShelf OpenTypes = new AssemblyShelf();
         private readonly AssemblyScanRecord _record = new AssemblyScanRecord();
-
 
         public AssemblyTypes(Assembly assembly) : this(assembly.FullName, () => assembly.ExportedTypes)
         {
@@ -45,18 +44,12 @@ namespace eQuantic.Core.Ioc.Scanning
             {
                 _record.LoadException = ex;
             }
-
-
         }
 
         public AssemblyScanRecord Record
         {
             get { return _record; }
         }
-
-
-        public readonly AssemblyShelf ClosedTypes = new AssemblyShelf();
-        public readonly AssemblyShelf OpenTypes = new AssemblyShelf();
 
         public IEnumerable<Type> FindTypes(TypeClassification classification)
         {

@@ -22,6 +22,46 @@ namespace eQuantic.Core.Ioc.Extensions
         }
 
         /// <summary>
+        /// Performs an action with a counter for each item in a sequence and provides
+        /// </summary>
+        /// <typeparam name="T">The type of the items in the sequence</typeparam>
+        /// <param name="values">The sequence to iterate</param>
+        /// <param name="eachAction">The action to performa on each item</param>
+        /// <returns></returns>
+        public static IEnumerable<T> Each<T>(this IEnumerable<T> values, Action<T, int> eachAction)
+        {
+            int index = 0;
+            foreach (T item in values)
+            {
+                eachAction(item, index++);
+            }
+
+            return values;
+        }
+
+        [DebuggerStepThrough]
+        public static IEnumerable<T> Each<T>(this IEnumerable<T> values, Action<T> eachAction)
+        {
+            foreach (T item in values)
+            {
+                eachAction(item);
+            }
+
+            return values;
+        }
+
+        [DebuggerStepThrough]
+        public static IEnumerable Each(this IEnumerable values, Action<object> eachAction)
+        {
+            foreach (object item in values)
+            {
+                eachAction(item);
+            }
+
+            return values;
+        }
+
+        /// <summary>
         /// Adds the value to the list if it does not already exist
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -64,45 +104,6 @@ namespace eQuantic.Core.Ioc.Extensions
         public static string Join(this IEnumerable<string> values, string separator)
         {
             return Join(values.ToArray(), separator);
-        }
-        /// <summary>
-        /// Performs an action with a counter for each item in a sequence and provides
-        /// </summary>
-        /// <typeparam name="T">The type of the items in the sequence</typeparam>
-        /// <param name="values">The sequence to iterate</param>
-        /// <param name="eachAction">The action to performa on each item</param>
-        /// <returns></returns>
-        public static IEnumerable<T> Each<T>(this IEnumerable<T> values, Action<T, int> eachAction)
-        {
-            int index = 0;
-            foreach (T item in values)
-            {
-                eachAction(item, index++);
-            }
-
-            return values;
-        }
-
-        [DebuggerStepThrough]
-        public static IEnumerable<T> Each<T>(this IEnumerable<T> values, Action<T> eachAction)
-        {
-            foreach (T item in values)
-            {
-                eachAction(item);
-            }
-
-            return values;
-        }
-
-        [DebuggerStepThrough]
-        public static IEnumerable Each(this IEnumerable values, Action<object> eachAction)
-        {
-            foreach (object item in values)
-            {
-                eachAction(item);
-            }
-
-            return values;
         }
     }
 }

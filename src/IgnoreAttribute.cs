@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace eQuantic.Core.Ioc
 {
@@ -12,6 +8,5 @@ namespace eQuantic.Core.Ioc
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
     public class IgnoreAttribute : Attribute
     {
-
     }
 }

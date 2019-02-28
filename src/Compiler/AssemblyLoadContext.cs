@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
-using System.Text;
+
 #if !NET461
 using System.Runtime.Loader;
 #endif
@@ -48,9 +46,25 @@ namespace eQuantic.Core.Ioc.Compiler
         }
     }
 #else
+
     public class CustomAssemblyLoadContext : IAssemblyLoadContext
 	{
-		public Assembly LoadFromStream(Stream assembly)
+		Assembly IAssemblyLoadContext.LoadFromAssemblyName(AssemblyName assemblyName)
+		{
+			return Assembly.Load(assemblyName);
+		}
+
+        public Assembly LoadFromAssemblyName(string assemblyName)
+		{
+			return Assembly.Load(assemblyName);
+		}
+
+        public Assembly LoadFromAssemblyPath(string assemblyName)
+		{
+			return Assembly.LoadFrom(assemblyName);
+		}
+
+        public Assembly LoadFromStream(Stream assembly)
 		{
 			if (assembly is MemoryStream memStream)
 			{
@@ -63,21 +77,7 @@ namespace eQuantic.Core.Ioc.Compiler
 				return Assembly.Load(stream.ToArray());
 			}
 		}
-		
-		Assembly IAssemblyLoadContext.LoadFromAssemblyName(AssemblyName assemblyName)
-		{
-			return Assembly.Load(assemblyName);
-		}
-
-		public Assembly LoadFromAssemblyPath(string assemblyName)
-		{
-			return Assembly.LoadFrom(assemblyName);
-		}
-
-		public Assembly LoadFromAssemblyName(string assemblyName)
-		{
-			return Assembly.Load(assemblyName);
-		}
 	}
+
 #endif
 }

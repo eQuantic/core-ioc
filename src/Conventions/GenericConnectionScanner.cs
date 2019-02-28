@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using eQuantic.Core.Ioc.Extensions;
 using eQuantic.Core.Ioc.Scanning;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,11 +23,6 @@ namespace eQuantic.Core.Ioc.Conventions
             }
         }
 
-        public override string ToString()
-        {
-            return "Connect all implementations of open generic type " + _openType.FullNameInCode();
-        }
-
         public void ScanTypes(TypeSet types, IServiceCollection services)
         {
             foreach (var type in types.AllTypes())
@@ -47,7 +40,6 @@ namespace eQuantic.Core.Ioc.Conventions
                     _interfaces.Fill(interfaceType);
                 }
             }
-
 
             foreach (var @interface in _interfaces)
             {
@@ -68,7 +60,11 @@ namespace eQuantic.Core.Ioc.Conventions
             {
                 concretions.Fill(type);
             }
+        }
 
+        public override string ToString()
+        {
+            return "Connect all implementations of open generic type " + _openType.FullNameInCode();
         }
 
         private void AddConcretionsThatCouldBeClosed(Type @interface, IServiceCollection services)
@@ -79,7 +75,6 @@ namespace eQuantic.Core.Ioc.Conventions
                 {
                     try
                     {
-
                         services.AddTransient(@interface, type.MakeGenericType(@interface.GetGenericArguments()));
                     }
                     catch (Exception)

@@ -2,21 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace eQuantic.Core.Ioc.Extensions
 {
     internal static class TypeExtensions
     {
-        private static readonly List<Type> _enumerableTypes = new List<Type>
-        {
-            typeof (IEnumerable<>),
-            typeof (IList<>),
-            typeof (IReadOnlyList<>),
-            typeof (List<>)
-        };
-
         public static readonly Dictionary<Type, string> Aliases = new Dictionary<Type, string>
         {
             {typeof(int), "int"},
@@ -30,10 +21,13 @@ namespace eQuantic.Core.Ioc.Extensions
             {typeof(object[]), "object[]"}
         };
 
-        public static bool CanBeCreated(this Type type)
+        private static readonly List<Type> _enumerableTypes = new List<Type>
         {
-            return type.IsConcrete() && type.GetConstructors().Any();
-        }
+            typeof (IEnumerable<>),
+            typeof (IList<>),
+            typeof (IReadOnlyList<>),
+            typeof (List<>)
+        };
 
         public static bool CanBeCastTo<T>(this Type type)
         {
@@ -51,6 +45,11 @@ namespace eQuantic.Core.Ioc.Extensions
             return destinationType.IsAssignableFrom(type);
         }
 
+        public static bool CanBeCreated(this Type type)
+        {
+            return type.IsConcrete() && type.GetConstructors().Any();
+        }
+
         public static bool CouldCloseTo(this Type openConcretion, Type closedInterface)
         {
             var openInterface = closedInterface.GetGenericTypeDefinition();
@@ -58,13 +57,6 @@ namespace eQuantic.Core.Ioc.Extensions
 
             var concreteArguments = openConcretion.GetGenericArguments();
             return arguments.Length == concreteArguments.Length && openConcretion.CanBeCastTo(openInterface);
-        }
-
-        public static bool IsEnumerable(this Type type)
-        {
-            if (type.IsArray) return true;
-
-            return type.IsGenericType && _enumerableTypes.Contains(type.GetGenericTypeDefinition());
         }
 
         public static Type DetermineElementType(this Type serviceType)
@@ -75,39 +67,6 @@ namespace eQuantic.Core.Ioc.Extensions
             }
 
             return serviceType.GetGenericArguments().First();
-        }
-
-        public static bool IsInNamespace(this Type type, string nameSpace)
-        {
-            if (type == null) return false;
-
-            return type.Namespace.StartsWith(nameSpace);
-        }
-
-        public static bool IsOpenGeneric(this Type type)
-        {
-            if (type == null) return false;
-            var typeInfo = type.GetTypeInfo();
-            return typeInfo.IsGenericTypeDefinition || typeInfo.ContainsGenericParameters;
-        }
-
-        public static bool IsConcrete(this Type type)
-        {
-            if (type == null) return false;
-
-            var typeInfo = type.GetTypeInfo();
-
-            return !typeInfo.IsAbstract && !typeInfo.IsInterface;
-        }
-
-        public static bool HasAttribute<T>(this Type type) where T : Attribute
-        {
-            return type.GetTypeInfo().GetCustomAttributes<T>().Any();
-        }
-
-        public static T GetAttribute<T>(this Type type) where T : Attribute
-        {
-            return type.GetTypeInfo().GetCustomAttributes<T>().FirstOrDefault();
         }
 
         public static Type FindFirstInterfaceThatCloses(this Type TPluggedType, Type templateType)
@@ -154,6 +113,46 @@ namespace eQuantic.Core.Ioc.Extensions
             }
 
             return type.FullName.Replace("+", ".");
+        }
+
+        public static T GetAttribute<T>(this Type type) where T : Attribute
+        {
+            return type.GetTypeInfo().GetCustomAttributes<T>().FirstOrDefault();
+        }
+
+        public static bool HasAttribute<T>(this Type type) where T : Attribute
+        {
+            return type.GetTypeInfo().GetCustomAttributes<T>().Any();
+        }
+
+        public static bool IsConcrete(this Type type)
+        {
+            if (type == null) return false;
+
+            var typeInfo = type.GetTypeInfo();
+
+            return !typeInfo.IsAbstract && !typeInfo.IsInterface;
+        }
+
+        public static bool IsEnumerable(this Type type)
+        {
+            if (type.IsArray) return true;
+
+            return type.IsGenericType && _enumerableTypes.Contains(type.GetGenericTypeDefinition());
+        }
+
+        public static bool IsInNamespace(this Type type, string nameSpace)
+        {
+            if (type == null) return false;
+
+            return type.Namespace.StartsWith(nameSpace);
+        }
+
+        public static bool IsOpenGeneric(this Type type)
+        {
+            if (type == null) return false;
+            var typeInfo = type.GetTypeInfo();
+            return typeInfo.IsGenericTypeDefinition || typeInfo.ContainsGenericParameters;
         }
 
         /// <summary>

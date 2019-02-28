@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using eQuantic.Core.Ioc.Compiler;
 
@@ -12,25 +11,24 @@ namespace eQuantic.Core.Ioc.Scanning
     {
         private static ImHashMap<Assembly, Task<AssemblyTypes>> _assemblies = ImHashMap<Assembly, Task<AssemblyTypes>>.Empty;
 
-        public static void ClearAll()
-        {
-            _assemblies = ImHashMap<Assembly, Task<AssemblyTypes>>.Empty;
-        }
-
         /// <summary>
-        /// Use to assert that there were no failures in type scanning when trying to find the exported types
-        /// from any Assembly
+        /// Use to assert that there were no failures in type scanning when trying to find the
+        /// exported types from any Assembly
         /// </summary>
         public static void AssertNoTypeScanningFailures()
         {
             var exceptions =
                 FailedAssemblies().Select(x => x.Record.LoadException);
 
-
             if (exceptions.Any())
             {
                 throw new AggregateException(exceptions);
             }
+        }
+
+        public static void ClearAll()
+        {
+            _assemblies = ImHashMap<Assembly, Task<AssemblyTypes>>.Empty;
         }
 
         public static IEnumerable<AssemblyTypes> FailedAssemblies()
@@ -41,19 +39,6 @@ namespace eQuantic.Core.Ioc.Scanning
             return tasks.Where(x => x.Result.Record.LoadException != null).Select(x => x.Result);
         }
 
-        public static Task<AssemblyTypes> ForAssembly(Assembly assembly)
-        {
-            if (_assemblies.TryFind(assembly, out var types))
-            {
-                return types;
-            }
-
-            types = Task.Factory.StartNew(() => new AssemblyTypes(assembly));
-            _assemblies = _assemblies.AddOrUpdate(assembly, types);
-
-            return types;
-        }
-
         public static Task<TypeSet> FindTypes(IEnumerable<Assembly> assemblies, Func<Type, bool> filter = null)
         {
             var tasks = assemblies.Select(ForAssembly).ToArray();
@@ -62,7 +47,6 @@ namespace eQuantic.Core.Ioc.Scanning
                 return new TypeSet(assems.Select(x => x.Result).ToArray(), filter);
             });
         }
-
 
         public static Task<IEnumerable<Type>> FindTypes(IEnumerable<Assembly> assemblies,
             TypeClassification classification, Func<Type, bool> filter = null)
@@ -81,6 +65,19 @@ namespace eQuantic.Core.Ioc.Scanning
             var query = new TypeQuery(classification, filter);
 
             return ForAssembly(assembly).ContinueWith(t => query.Find(t.Result));
+        }
+
+        public static Task<AssemblyTypes> ForAssembly(Assembly assembly)
+        {
+            if (_assemblies.TryFind(assembly, out var types))
+            {
+                return types;
+            }
+
+            types = Task.Factory.StartNew(() => new AssemblyTypes(assembly));
+            _assemblies = _assemblies.AddOrUpdate(assembly, types);
+
+            return types;
         }
     }
 }

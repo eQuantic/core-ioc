@@ -11,6 +11,12 @@ namespace eQuantic.Core.Ioc.Compiler
         private Func<T, bool> _matchesAny = x => true;
         private Func<T, bool> _matchesNone = x => false;
 
+        public static CompositePredicate<T> operator +(CompositePredicate<T> invokes, Func<T, bool> filter)
+        {
+            invokes.Add(filter);
+            return invokes;
+        }
+
         internal void Add(Func<T, bool> filter)
         {
             _matchesAll = x => _list.All(predicate => predicate(x));
@@ -20,12 +26,9 @@ namespace eQuantic.Core.Ioc.Compiler
             _list.Add(filter);
         }
 
-
-
-        public static CompositePredicate<T> operator +(CompositePredicate<T> invokes, Func<T, bool> filter)
+        internal bool DoesNotMatcheAny(T target)
         {
-            invokes.Add(filter);
-            return invokes;
+            return _list.Count == 0 || !MatchesAny(target);
         }
 
         internal bool MatchesAll(T target)
@@ -41,11 +44,6 @@ namespace eQuantic.Core.Ioc.Compiler
         internal bool MatchesNone(T target)
         {
             return _matchesNone(target);
-        }
-
-        internal bool DoesNotMatcheAny(T target)
-        {
-            return _list.Count == 0 || !MatchesAny(target);
         }
     }
 }

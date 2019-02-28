@@ -1,129 +1,102 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace eQuantic.Core.Ioc.Compiler
 {
-    /// <summary>Immutable Key-Value pair. It is reference type (could be check for null), 
-    /// which is different from System value type <see cref="KeyValuePair{TKey,TValue}"/>.
-    /// In addition provides <see cref="Equals"/> and <see cref="GetHashCode"/> implementations.</summary>
-    /// <typeparam name="K">Type of Key.</typeparam><typeparam name="V">Type of Value.</typeparam>
-    internal class KV<K, V>
-    {
-        /// <summary>Key.</summary>
-        public readonly K Key;
-
-        /// <summary>Value.</summary>
-        public readonly V Value;
-
-        /// <summary>Creates Key-Value object by providing key and value. Does Not check either one for null.</summary>
-        /// <param name="key">key.</param><param name="value">value.</param>
-        public KV(K key, V value)
-        {
-            Key = key;
-            Value = value;
-        }
-
-        /// <summary>Creates nice string view.</summary><returns>String representation.</returns>
-        public override string ToString()
-        {
-            var s = new StringBuilder('{');
-            if (Key != null)
-                s.Append(Key);
-            s.Append(',');
-            if (Value != null)
-                s.Append(Value);
-            s.Append('}');
-            return s.ToString();
-        }
-
-        /// <summary>Returns true if both key and value are equal to corresponding key-value of other object.</summary>
-        /// <param name="obj">Object to check equality with.</param> <returns>True if equal.</returns>
-        public override bool Equals(object obj)
-        {
-            var other = obj as KV<K, V>;
-            return other != null
-                   && (ReferenceEquals(other.Key, Key) || Equals(other.Key, Key))
-                   && (ReferenceEquals(other.Value, Value) || Equals(other.Value, Value));
-        }
-
-        /// <summary>Combines key and value hash code. R# generated default implementation.</summary>
-        /// <returns>Combined hash code for key-value.</returns>
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return ((object)Key == null ? 0 : Key.GetHashCode() * 397)
-                       ^ ((object)Value == null ? 0 : Value.GetHashCode());
-            }
-        }
-    }
-
-
-    /// <summary>Given the old value should and the new value should return result updated value.</summary>
+    /// <summary>
+    /// Given the old value should and the new value should return result updated value.
+    /// </summary>
     internal delegate V Update<V>(V oldValue, V newValue);
-    /// <summary>Immutable http://en.wikipedia.org/wiki/AVL_tree 
-    /// where node key is the hash code of <typeparamref name="K"/>.</summary>
+
+    /// <summary>
+    /// Immutable http://en.wikipedia.org/wiki/AVL_tree where node key is the hash code of
+    /// <typeparamref name="K"/>.
+    /// </summary>
     internal sealed class ImHashMap<K, V>
     {
-        /// <summary>Empty tree to start with.</summary>
+        /// <summary>
+        /// Empty tree to start with.
+        /// </summary>
         public static readonly ImHashMap<K, V> Empty = new ImHashMap<K, V>();
 
-        /// <summary>Calculated key hash.</summary>
-        public int Hash
-        {
-            get { return _data.Hash; }
-        }
+        /// <summary>
+        /// Height of longest sub-tree/branch plus 1. It is 0 for empty tree, and 1 for single node tree.
+        /// </summary>
+        public readonly int Height;
 
-        /// <summary>Key of type K that should support <see cref="object.Equals(object)"/> and <see cref="object.GetHashCode"/>.</summary>
-        public K Key
-        {
-            get { return _data.Key; }
-        }
+        /// <summary>
+        /// Left sub-tree/branch, or empty.
+        /// </summary>
+        public readonly ImHashMap<K, V> Left;
 
-        /// <summary>Value of any type V.</summary>
-        public V Value
-        {
-            get { return _data.Value; }
-        }
+        /// <summary>
+        /// Right sub-tree/branch, or empty.
+        /// </summary>
+        public readonly ImHashMap<K, V> Right;
 
-        /// <summary>In case of <see cref="Hash"/> conflicts for different keys contains conflicted keys with their values.</summary>
+        /// <summary>
+        /// In case of <see cref="Hash"/> conflicts for different keys contains conflicted keys with
+        /// their values.
+        /// </summary>
         public KV<K, V>[] Conflicts
         {
             get { return _data.Conflicts; }
         }
 
-        /// <summary>Left sub-tree/branch, or empty.</summary>
-        public readonly ImHashMap<K, V> Left;
+        /// <summary>
+        /// Calculated key hash.
+        /// </summary>
+        public int Hash
+        {
+            get { return _data.Hash; }
+        }
 
-        /// <summary>Right sub-tree/branch, or empty.</summary>
-        public readonly ImHashMap<K, V> Right;
-
-        /// <summary>Height of longest sub-tree/branch plus 1. It is 0 for empty tree, and 1 for single node tree.</summary>
-        public readonly int Height;
-
-        /// <summary>Returns true if tree is empty.</summary>
+        /// <summary>
+        /// Returns true if tree is empty.
+        /// </summary>
         public bool IsEmpty
         {
             get { return Height == 0; }
         }
 
-        /// <summary>Returns new tree with added key-value. 
-        /// If value with the same key is exist then the value is replaced.</summary>
-        /// <param name="key">Key to add.</param><param name="value">Value to add.</param>
+        /// <summary>
+        /// Key of type K that should support <see cref="object.Equals(object)"/> and <see cref="object.GetHashCode"/>.
+        /// </summary>
+        public K Key
+        {
+            get { return _data.Key; }
+        }
+
+        /// <summary>
+        /// Value of any type V.
+        /// </summary>
+        public V Value
+        {
+            get { return _data.Value; }
+        }
+
+        /// <summary>
+        /// Returns new tree with added key-value. If value with the same key is exist then the value
+        /// is replaced.
+        /// </summary>
+        /// <param name="key">Key to add.</param>
+        /// <param name="value">Value to add.</param>
         /// <returns>New tree with added or updated key-value.</returns>
         public ImHashMap<K, V> AddOrUpdate(K key, V value)
         {
             return AddOrUpdate(key.GetHashCode(), key, value);
         }
 
-        /// <summary>Returns new tree with added key-value. If value with the same key is exist, then
-        /// if <paramref name="update"/> is not specified: then existing value will be replaced by <paramref name="value"/>;
-        /// if <paramref name="update"/> is specified: then update delegate will decide what value to keep.</summary>
-        /// <param name="key">Key to add.</param><param name="value">Value to add.</param>
+        /// <summary>
+        /// Returns new tree with added key-value. If value with the same key is exist, then if
+        /// <paramref name="update"/> is not specified: then existing value will be replaced by
+        /// <paramref name="value"/>; if <paramref name="update"/> is specified: then update delegate
+        /// will decide what value to keep.
+        /// </summary>
+        /// <param name="key">Key to add.</param>
+        /// <param name="value">Value to add.</param>
         /// <param name="update">Update handler.</param>
         /// <returns>New tree with added or updated key-value.</returns>
         public ImHashMap<K, V> AddOrUpdate(K key, V value, Update<V> update)
@@ -131,55 +104,11 @@ namespace eQuantic.Core.Ioc.Compiler
             return AddOrUpdate(key.GetHashCode(), key, value, update);
         }
 
-        /// <summary>Looks for <paramref name="key"/> and replaces its value with new <paramref name="value"/>, or 
-        /// runs custom update handler (<paramref name="update"/>) with old and new value to get the updated result.</summary>
-        /// <param name="key">Key to look for.</param>
-        /// <param name="value">New value to replace key value with.</param>
-        /// <param name="update">(optional) Delegate for custom update logic, it gets old and new <paramref name="value"/>
-        /// as inputs and should return updated value as output.</param>
-        /// <returns>New tree with updated value or the SAME tree if no key found.</returns>
-        public ImHashMap<K, V> Update(K key, V value, Update<V> update = null)
-        {
-            return Update(key.GetHashCode(), key, value, update);
-        }
-
-        /// <summary>Looks for key in a tree and returns the key value if found, or <paramref name="defaultValue"/> otherwise.</summary>
-        /// <param name="key">Key to look for.</param> <param name="defaultValue">(optional) Value to return if key is not found.</param>
-        /// <returns>Found value or <paramref name="defaultValue"/>.</returns>
-        [MethodImpl((MethodImplOptions)256)]
-        public V GetValueOrDefault(K key, V defaultValue = default(V))
-        {
-            var t = this;
-            var hash = key.GetHashCode();
-            while (t.Height != 0 && t.Hash != hash)
-                t = hash < t.Hash ? t.Left : t.Right;
-            return t.Height != 0 && (ReferenceEquals(key, t.Key) || key.Equals(t.Key))
-                ? t.Value : t.GetConflictedValueOrDefault(key, defaultValue);
-        }
-
-        /// <summary>Returns true if key is found and sets the value.</summary>
-        /// <param name="key">Key to look for.</param> <param name="value">Result value</param>
-        /// <returns>True if key found, false otherwise.</returns>
-        [MethodImpl((MethodImplOptions)256)]
-        public bool TryFind(K key, out V value)
-        {
-            var hash = key.GetHashCode();
-
-            var t = this;
-            while (t.Height != 0 && t._data.Hash != hash)
-                t = hash < t._data.Hash ? t.Left : t.Right;
-
-            if (t.Height != 0 && (ReferenceEquals(key, t._data.Key) || key.Equals(t._data.Key)))
-            {
-                value = t._data.Value;
-                return true;
-            }
-
-            return t.TryFindConflictedValue(key, out value);
-        }
-
-        /// <summary>Depth-first in-order traversal as described in http://en.wikipedia.org/wiki/Tree_traversal
-        /// The only difference is using fixed size array instead of stack for speed-up (~20% faster than stack).</summary>
+        /// <summary>
+        /// Depth-first in-order traversal as described in
+        /// http://en.wikipedia.org/wiki/Tree_traversal The only difference is using fixed size array
+        /// instead of stack for speed-up (~20% faster than stack).
+        /// </summary>
         /// <returns>Sequence of enumerated key value pairs.</returns>
         public IEnumerable<KV<K, V>> Enumerate()
         {
@@ -211,39 +140,84 @@ namespace eQuantic.Core.Ioc.Compiler
             }
         }
 
-        /// <summary>Removes or updates value for specified key, or does nothing if key is not found.
-        /// Based on Eric Lippert http://blogs.msdn.com/b/ericlippert/archive/2008/01/21/immutability-in-c-part-nine-academic-plus-my-avl-tree-implementation.aspx </summary>
-        /// <param name="key">Key to look for.</param> 
+        /// <summary>
+        /// Looks for key in a tree and returns the key value if found, or <paramref
+        /// name="defaultValue"/> otherwise.
+        /// </summary>
+        /// <param name="key">Key to look for.</param>
+        /// <param name="defaultValue">(optional) Value to return if key is not found.</param>
+        /// <returns>Found value or <paramref name="defaultValue"/>.</returns>
+        [MethodImpl((MethodImplOptions)256)]
+        public V GetValueOrDefault(K key, V defaultValue = default(V))
+        {
+            var t = this;
+            var hash = key.GetHashCode();
+            while (t.Height != 0 && t.Hash != hash)
+                t = hash < t.Hash ? t.Left : t.Right;
+            return t.Height != 0 && (ReferenceEquals(key, t.Key) || key.Equals(t.Key))
+                ? t.Value : t.GetConflictedValueOrDefault(key, defaultValue);
+        }
+
+        /// <summary>
+        /// Removes or updates value for specified key, or does nothing if key is not found. Based on
+        /// Eric Lippert http://blogs.msdn.com/b/ericlippert/archive/2008/01/21/immutability-in-c-part-nine-academic-plus-my-avl-tree-implementation.aspx
+        /// </summary>
+        /// <param name="key">Key to look for.</param>
         /// <returns>New tree with removed or updated value.</returns>
         public ImHashMap<K, V> Remove(K key)
         {
             return Remove(key.GetHashCode(), key);
         }
 
-        #region Implementation
-
-        private sealed class Data
+        /// <summary>
+        /// Returns true if key is found and sets the value.
+        /// </summary>
+        /// <param name="key">Key to look for.</param>
+        /// <param name="value">Result value</param>
+        /// <returns>True if key found, false otherwise.</returns>
+        [MethodImpl((MethodImplOptions)256)]
+        public bool TryFind(K key, out V value)
         {
-            public readonly int Hash;
-            public readonly K Key;
-            public readonly V Value;
+            var hash = key.GetHashCode();
 
-            public readonly KV<K, V>[] Conflicts;
+            var t = this;
+            while (t.Height != 0 && t._data.Hash != hash)
+                t = hash < t._data.Hash ? t.Left : t.Right;
 
-            public Data() { }
-
-            public Data(int hash, K key, V value, KV<K, V>[] conflicts = null)
+            if (t.Height != 0 && (ReferenceEquals(key, t._data.Key) || key.Equals(t._data.Key)))
             {
-                Hash = hash;
-                Key = key;
-                Value = value;
-                Conflicts = conflicts;
+                value = t._data.Value;
+                return true;
             }
+
+            return t.TryFindConflictedValue(key, out value);
         }
+
+        /// <summary>
+        /// Looks for <paramref name="key"/> and replaces its value with new <paramref
+        /// name="value"/>, or runs custom update handler ( <paramref name="update"/>) with old and
+        /// new value to get the updated result.
+        /// </summary>
+        /// <param name="key">Key to look for.</param>
+        /// <param name="value">New value to replace key value with.</param>
+        /// <param name="update">
+        /// (optional) Delegate for custom update logic, it gets old and new <paramref name="value"/>
+        /// as inputs and should return updated value as output.
+        /// </param>
+        /// <returns>New tree with updated value or the SAME tree if no key found.</returns>
+        public ImHashMap<K, V> Update(K key, V value, Update<V> update = null)
+        {
+            return Update(key.GetHashCode(), key, value, update);
+        }
+
+        #region Implementation
 
         private readonly Data _data;
 
-        private ImHashMap() { _data = new Data(); }
+        private ImHashMap()
+        {
+            _data = new Data();
+        }
 
         private ImHashMap(Data data)
         {
@@ -290,18 +264,59 @@ namespace eQuantic.Core.Ioc.Compiler
                                 Left, Right.AddOrUpdate(hash, key, value)).KeepBalance())));
         }
 
-        private ImHashMap<K, V> AddOrUpdate(int hash, K key, V value, Update<V> update)
+        internal V GetConflictedValueOrDefault(K key, V defaultValue)
         {
-            return Height == 0
-                ? new ImHashMap<K, V>(new Data(hash, key, value))
-                : (hash == Hash // update
-                    ? (ReferenceEquals(Key, key) || Key.Equals(key)
-                        ? new ImHashMap<K, V>(new Data(hash, key, update(Value, value), Conflicts), Left, Right)
-                        : UpdateValueAndResolveConflicts(key, value, update, false))
-                    : (hash < Hash
-                        ? With(Left.AddOrUpdate(hash, key, value, update), Right)
-                        : With(Left, Right.AddOrUpdate(hash, key, value, update)))
-                    .KeepBalance());
+            if (Conflicts != null)
+                for (var i = Conflicts.Length - 1; i >= 0; --i)
+                    if (Equals(Conflicts[i].Key, key))
+                        return Conflicts[i].Value;
+            return defaultValue;
+        }
+
+        internal ImHashMap<K, V> Remove(int hash, K key, bool ignoreKey = false)
+        {
+            if (Height == 0)
+                return this;
+
+            ImHashMap<K, V> result;
+            if (hash == Hash) // found node
+            {
+                if (ignoreKey || Equals(Key, key))
+                {
+                    if (!ignoreKey && Conflicts != null)
+                        return ReplaceRemovedWithConflicted();
+
+                    if (Height == 1) // remove node
+                        return Empty;
+
+                    if (Right.IsEmpty)
+                        result = Left;
+                    else if (Left.IsEmpty)
+                        result = Right;
+                    else
+                    {
+                        // we have two children, so remove the next highest node and replace this
+                        // node with it.
+                        var successor = Right;
+                        while (!successor.Left.IsEmpty) successor = successor.Left;
+                        result = new ImHashMap<K, V>(successor._data,
+                            Left, Right.Remove(successor.Hash, default(K), ignoreKey: true));
+                    }
+                }
+                else if (Conflicts != null)
+                    return TryRemoveConflicted(key);
+                else
+                    return this; // if key is not matching and no conflicts to lookup - just return
+            }
+            else if (hash < Hash)
+                result = new ImHashMap<K, V>(_data, Left.Remove(hash, key, ignoreKey), Right);
+            else
+                result = new ImHashMap<K, V>(_data, Left, Right.Remove(hash, key, ignoreKey));
+
+            if (result.Height == 1)
+                return result;
+
+            return result.KeepBalance();
         }
 
         internal ImHashMap<K, V> Update(int hash, K key, V value, Update<V> update)
@@ -317,50 +332,18 @@ namespace eQuantic.Core.Ioc.Compiler
                     .KeepBalance());
         }
 
-        private ImHashMap<K, V> UpdateValueAndResolveConflicts(K key, V value, Update<V> update, bool updateOnly)
+        private ImHashMap<K, V> AddOrUpdate(int hash, K key, V value, Update<V> update)
         {
-            if (Conflicts == null) // add only if updateOnly is false.
-                return updateOnly ? this
-                    : new ImHashMap<K, V>(new Data(Hash, Key, Value, new[] { new KV<K, V>(key, value) }), Left, Right);
-
-            var found = Conflicts.Length - 1;
-            while (found >= 0 && !Equals(Conflicts[found].Key, Key)) --found;
-            if (found == -1)
-            {
-                if (updateOnly) return this;
-                var newConflicts = new KV<K, V>[Conflicts.Length + 1];
-                Array.Copy(Conflicts, 0, newConflicts, 0, Conflicts.Length);
-                newConflicts[Conflicts.Length] = new KV<K, V>(key, value);
-                return new ImHashMap<K, V>(new Data(Hash, Key, Value, newConflicts), Left, Right);
-            }
-
-            var conflicts = new KV<K, V>[Conflicts.Length];
-            Array.Copy(Conflicts, 0, conflicts, 0, Conflicts.Length);
-            conflicts[found] = new KV<K, V>(key, update == null ? value : update(Conflicts[found].Value, value));
-            return new ImHashMap<K, V>(new Data(Hash, Key, Value, conflicts), Left, Right);
-        }
-
-        internal V GetConflictedValueOrDefault(K key, V defaultValue)
-        {
-            if (Conflicts != null)
-                for (var i = Conflicts.Length - 1; i >= 0; --i)
-                    if (Equals(Conflicts[i].Key, key))
-                        return Conflicts[i].Value;
-            return defaultValue;
-        }
-
-        private bool TryFindConflictedValue(K key, out V value)
-        {
-            if (Height != 0 && Conflicts != null)
-                for (var i = Conflicts.Length - 1; i >= 0; --i)
-                    if (Equals(Conflicts[i].Key, key))
-                    {
-                        value = Conflicts[i].Value;
-                        return true;
-                    }
-
-            value = default(V);
-            return false;
+            return Height == 0
+                ? new ImHashMap<K, V>(new Data(hash, key, value))
+                : (hash == Hash // update
+                    ? (ReferenceEquals(Key, key) || Key.Equals(key)
+                        ? new ImHashMap<K, V>(new Data(hash, key, update(Value, value), Conflicts), Left, Right)
+                        : UpdateValueAndResolveConflicts(key, value, update, false))
+                    : (hash < Hash
+                        ? With(Left.AddOrUpdate(hash, key, value, update), Right)
+                        : With(Left, Right.AddOrUpdate(hash, key, value, update)))
+                    .KeepBalance());
         }
 
         private ImHashMap<K, V> KeepBalance()
@@ -373,22 +356,14 @@ namespace eQuantic.Core.Ioc.Compiler
                 var leftRight = left.Right;
                 if (leftRight.Height - leftLeft.Height == 1)
                 {
-                    // double rotation:
-                    //      5     =>     5     =>     4
-                    //   2     6      4     6      2     5
-                    // 1   4        2   3        1   3     6
-                    //    3        1
+                    // double rotation: 5 => 5 => 4 2 6 4 6 2 5 1 4 2 3 1 3 6 3 1
                     return new ImHashMap<K, V>(leftRight._data,
                         left: new ImHashMap<K, V>(left._data,
                             left: leftLeft, right: leftRight.Left), right: new ImHashMap<K, V>(_data,
                             left: leftRight.Right, right: Right));
                 }
 
-                // todo: do we need this?
-                // one rotation:
-                //      5     =>     2
-                //   2     6      1     5
-                // 1   4              4   6
+                // todo: do we need this? one rotation: 5 => 2 2 6 1 5 1 4 4 6
                 return new ImHashMap<K, V>(left._data,
                     left: leftLeft, right: new ImHashMap<K, V>(_data,
                         left: leftRight, right: Right));
@@ -415,54 +390,27 @@ namespace eQuantic.Core.Ioc.Compiler
             return this;
         }
 
-        private ImHashMap<K, V> With(ImHashMap<K, V> left, ImHashMap<K, V> right)
+        private ImHashMap<K, V> ReplaceRemovedWithConflicted()
         {
-            return left == Left && right == Right ? this : new ImHashMap<K, V>(_data, left, right);
+            if (Conflicts.Length == 1)
+                return new ImHashMap<K, V>(new Data(Hash, Conflicts[0].Key, Conflicts[0].Value), Left, Right);
+            var shrinkedConflicts = new KV<K, V>[Conflicts.Length - 1];
+            Array.Copy(Conflicts, 1, shrinkedConflicts, 0, shrinkedConflicts.Length);
+            return new ImHashMap<K, V>(new Data(Hash, Conflicts[0].Key, Conflicts[0].Value, shrinkedConflicts), Left, Right);
         }
 
-        internal ImHashMap<K, V> Remove(int hash, K key, bool ignoreKey = false)
+        private bool TryFindConflictedValue(K key, out V value)
         {
-            if (Height == 0)
-                return this;
-
-            ImHashMap<K, V> result;
-            if (hash == Hash) // found node
-            {
-                if (ignoreKey || Equals(Key, key))
-                {
-                    if (!ignoreKey && Conflicts != null)
-                        return ReplaceRemovedWithConflicted();
-
-                    if (Height == 1) // remove node
-                        return Empty;
-
-                    if (Right.IsEmpty)
-                        result = Left;
-                    else if (Left.IsEmpty)
-                        result = Right;
-                    else
+            if (Height != 0 && Conflicts != null)
+                for (var i = Conflicts.Length - 1; i >= 0; --i)
+                    if (Equals(Conflicts[i].Key, key))
                     {
-                        // we have two children, so remove the next highest node and replace this node with it.
-                        var successor = Right;
-                        while (!successor.Left.IsEmpty) successor = successor.Left;
-                        result = new ImHashMap<K, V>(successor._data,
-                            Left, Right.Remove(successor.Hash, default(K), ignoreKey: true));
+                        value = Conflicts[i].Value;
+                        return true;
                     }
-                }
-                else if (Conflicts != null)
-                    return TryRemoveConflicted(key);
-                else
-                    return this; // if key is not matching and no conflicts to lookup - just return
-            }
-            else if (hash < Hash)
-                result = new ImHashMap<K, V>(_data, Left.Remove(hash, key, ignoreKey), Right);
-            else
-                result = new ImHashMap<K, V>(_data, Left, Right.Remove(hash, key, ignoreKey));
 
-            if (result.Height == 1)
-                return result;
-
-            return result.KeepBalance();
+            value = default(V);
+            return false;
         }
 
         private ImHashMap<K, V> TryRemoveConflicted(K key)
@@ -481,15 +429,127 @@ namespace eQuantic.Core.Ioc.Compiler
             return new ImHashMap<K, V>(new Data(Hash, Key, Value, shrinkedConflicts), Left, Right);
         }
 
-        private ImHashMap<K, V> ReplaceRemovedWithConflicted()
+        private ImHashMap<K, V> UpdateValueAndResolveConflicts(K key, V value, Update<V> update, bool updateOnly)
         {
-            if (Conflicts.Length == 1)
-                return new ImHashMap<K, V>(new Data(Hash, Conflicts[0].Key, Conflicts[0].Value), Left, Right);
-            var shrinkedConflicts = new KV<K, V>[Conflicts.Length - 1];
-            Array.Copy(Conflicts, 1, shrinkedConflicts, 0, shrinkedConflicts.Length);
-            return new ImHashMap<K, V>(new Data(Hash, Conflicts[0].Key, Conflicts[0].Value, shrinkedConflicts), Left, Right);
+            if (Conflicts == null) // add only if updateOnly is false.
+                return updateOnly ? this
+                    : new ImHashMap<K, V>(new Data(Hash, Key, Value, new[] { new KV<K, V>(key, value) }), Left, Right);
+
+            var found = Conflicts.Length - 1;
+            while (found >= 0 && !Equals(Conflicts[found].Key, Key)) --found;
+            if (found == -1)
+            {
+                if (updateOnly) return this;
+                var newConflicts = new KV<K, V>[Conflicts.Length + 1];
+                Array.Copy(Conflicts, 0, newConflicts, 0, Conflicts.Length);
+                newConflicts[Conflicts.Length] = new KV<K, V>(key, value);
+                return new ImHashMap<K, V>(new Data(Hash, Key, Value, newConflicts), Left, Right);
+            }
+
+            var conflicts = new KV<K, V>[Conflicts.Length];
+            Array.Copy(Conflicts, 0, conflicts, 0, Conflicts.Length);
+            conflicts[found] = new KV<K, V>(key, update == null ? value : update(Conflicts[found].Value, value));
+            return new ImHashMap<K, V>(new Data(Hash, Key, Value, conflicts), Left, Right);
         }
 
-        #endregion
+        private ImHashMap<K, V> With(ImHashMap<K, V> left, ImHashMap<K, V> right)
+        {
+            return left == Left && right == Right ? this : new ImHashMap<K, V>(_data, left, right);
+        }
+
+        private sealed class Data
+        {
+            public readonly KV<K, V>[] Conflicts;
+            public readonly int Hash;
+            public readonly K Key;
+            public readonly V Value;
+
+            public Data()
+            {
+            }
+
+            public Data(int hash, K key, V value, KV<K, V>[] conflicts = null)
+            {
+                Hash = hash;
+                Key = key;
+                Value = value;
+                Conflicts = conflicts;
+            }
+        }
+
+        #endregion Implementation
+    }
+
+    /// <summary>
+    /// Immutable Key-Value pair. It is reference type (could be check for null), which is different
+    /// from System value type <see cref="KeyValuePair{TKey,TValue}"/>. In addition provides <see
+    /// cref="Equals"/> and <see cref="GetHashCode"/> implementations.
+    /// </summary>
+    /// <typeparam name="K">Type of Key.</typeparam>
+    /// <typeparam name="V">Type of Value.</typeparam>
+    internal class KV<K, V>
+    {
+        /// <summary>
+        /// Key.
+        /// </summary>
+        public readonly K Key;
+
+        /// <summary>
+        /// Value.
+        /// </summary>
+        public readonly V Value;
+
+        /// <summary>
+        /// Creates Key-Value object by providing key and value. Does Not check either one for null.
+        /// </summary>
+        /// <param name="key">key.</param>
+        /// <param name="value">value.</param>
+        public KV(K key, V value)
+        {
+            Key = key;
+            Value = value;
+        }
+
+        /// <summary>
+        /// Returns true if both key and value are equal to corresponding key-value of other object.
+        /// </summary>
+        /// <param name="obj">Object to check equality with.</param>
+        /// <returns>True if equal.</returns>
+        public override bool Equals(object obj)
+        {
+            var other = obj as KV<K, V>;
+            return other != null
+                   && (ReferenceEquals(other.Key, Key) || Equals(other.Key, Key))
+                   && (ReferenceEquals(other.Value, Value) || Equals(other.Value, Value));
+        }
+
+        /// <summary>
+        /// Combines key and value hash code. R# generated default implementation.
+        /// </summary>
+        /// <returns>Combined hash code for key-value.</returns>
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return ((object)Key == null ? 0 : Key.GetHashCode() * 397)
+                       ^ ((object)Value == null ? 0 : Value.GetHashCode());
+            }
+        }
+
+        /// <summary>
+        /// Creates nice string view.
+        /// </summary>
+        /// <returns>String representation.</returns>
+        public override string ToString()
+        {
+            var s = new StringBuilder('{');
+            if (Key != null)
+                s.Append(Key);
+            s.Append(',');
+            if (Value != null)
+                s.Append(Value);
+            s.Append('}');
+            return s.ToString();
+        }
     }
 }

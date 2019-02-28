@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
+using eQuantic.Core.Ioc.Extensions;
 using eQuantic.Core.Ioc.Scanning;
 using Microsoft.Extensions.DependencyInjection;
-using eQuantic.Core.Ioc.Extensions;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Reflection;
 
 namespace eQuantic.Core.Ioc.Conventions
 {
@@ -24,6 +21,7 @@ namespace eQuantic.Core.Ioc.Conventions
         {
             return CanBeCastTo(type, _serviceType) && type.GetConstructors().Any() && type.CanBeCreated();
         }
+
         public void ScanTypes(TypeSet types, IServiceCollection services)
         {
             if (_serviceType.IsOpenGeneric())
@@ -42,38 +40,9 @@ namespace eQuantic.Core.Ioc.Conventions
             }
         }
 
-        private static Type DetermineLeastSpecificButValidType(Type pluginType, Type type)
-        {
-            if (pluginType.IsGenericTypeDefinition && !type.IsOpenGeneric())
-                return type.FindFirstInterfaceThatCloses(pluginType);
-
-            return pluginType;
-        }
-
         public override string ToString()
         {
             return "Find and register all types implementing " + _serviceType.FullName;
-        }
-
-        private static bool CanBeCastTo(Type implementationType, Type serviceType)
-        {
-            if (implementationType == null) return false;
-
-            if (implementationType == serviceType) return true;
-
-
-            if (serviceType.IsOpenGeneric())
-            {
-                return CanBeCast(serviceType, implementationType);
-            }
-
-            if (implementationType.IsOpenGeneric())
-            {
-                return false;
-            }
-
-
-            return serviceType.GetTypeInfo().IsAssignableFrom(implementationType.GetTypeInfo());
         }
 
         private static bool CanBeCast(Type serviceType, Type implementationType)
@@ -92,12 +61,30 @@ namespace eQuantic.Core.Ioc.Conventions
             }
         }
 
+        private static bool CanBeCastTo(Type implementationType, Type serviceType)
+        {
+            if (implementationType == null) return false;
+
+            if (implementationType == serviceType) return true;
+
+            if (serviceType.IsOpenGeneric())
+            {
+                return CanBeCast(serviceType, implementationType);
+            }
+
+            if (implementationType.IsOpenGeneric())
+            {
+                return false;
+            }
+
+            return serviceType.GetTypeInfo().IsAssignableFrom(implementationType.GetTypeInfo());
+        }
+
         private static bool CheckGenericType(Type pluggedType, Type pluginType)
         {
             if (pluggedType == null || pluginType == null) return false;
 
             if (pluginType.GetTypeInfo().IsAssignableFrom(pluggedType.GetTypeInfo())) return true;
-
 
             // check interfaces
             foreach (var type in pluggedType.GetInterfaces())
@@ -129,6 +116,14 @@ namespace eQuantic.Core.Ioc.Conventions
             }
 
             return false;
+        }
+
+        private static Type DetermineLeastSpecificButValidType(Type pluginType, Type type)
+        {
+            if (pluginType.IsGenericTypeDefinition && !type.IsOpenGeneric())
+                return type.FindFirstInterfaceThatCloses(pluginType);
+
+            return pluginType;
         }
     }
 }

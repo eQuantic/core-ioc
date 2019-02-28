@@ -12,6 +12,34 @@ namespace eQuantic.Core.Ioc.Scanning
         string Description { get; set; }
 
         /// <summary>
+        /// Add all concrete types of the Plugin Type as Instances of Plugin Type
+        /// </summary>
+        /// <typeparam name="TPluginType"></typeparam>
+        FindAllTypesFilter AddAllTypesOf<TPluginType>();
+
+        /// <summary>
+        /// Add all concrete types of the Plugin Type as Instances of Plugin Type
+        /// </summary>
+        /// <param name="pluginType"></param>
+        FindAllTypesFilter AddAllTypesOf(Type pluginType);
+
+        void AssembliesAndExecutablesFromApplicationBaseDirectory(Func<Assembly, bool> assemblyFilter = null);
+
+        void AssembliesAndExecutablesFromPath(string path);
+
+        void AssembliesAndExecutablesFromPath(string path,
+                    Func<Assembly, bool> assemblyFilter);
+
+        void AssembliesFromApplicationBaseDirectory();
+
+        void AssembliesFromApplicationBaseDirectory(Func<Assembly, bool> assemblyFilter);
+
+        void AssembliesFromPath(string path);
+
+        void AssembliesFromPath(string path,
+                    Func<Assembly, bool> assemblyFilter);
+
+        /// <summary>
         /// Add an Assembly to the scanning operation
         /// </summary>
         /// <param name="assembly"></param>
@@ -36,17 +64,11 @@ namespace eQuantic.Core.Ioc.Scanning
         void AssemblyContainingType(Type type);
 
         /// <summary>
-        /// Add all concrete types of the Plugin Type as Instances of Plugin Type
+        /// Adds a registration convention to be applied to all the types in this logical "scan" operation
         /// </summary>
-        /// <typeparam name="TPluginType"></typeparam>
-        FindAllTypesFilter AddAllTypesOf<TPluginType>();
+        /// <typeparam name="T"></typeparam>
+        void Convention<T>() where T : IRegistrationConvention, new();
 
-        /// <summary>
-        /// Add all concrete types of the Plugin Type as Instances of Plugin Type
-        /// </summary>
-        /// <param name="pluginType"></param>
-        FindAllTypesFilter AddAllTypesOf(Type pluginType);
-        
         /// <summary>
         /// Exclude types that match the Predicate from being scanned
         /// </summary>
@@ -66,64 +88,43 @@ namespace eQuantic.Core.Ioc.Scanning
         void ExcludeNamespaceContainingType<T>();
 
         /// <summary>
-        /// Only include types matching the Predicate in the scanning operation. You can
-        /// use multiple Include() calls in a single scanning operation
-        /// </summary>
-        /// <param name="predicate"></param>
-        void Include(Func<Type, bool> predicate);
-
-        /// <summary>
-        /// Only include types from this nameSpace or its children in the scanning operation.  You can
-        /// use multiple Include() calls in a single scanning operation
-        /// </summary>
-        /// <param name="nameSpace"></param>
-        void IncludeNamespace(string nameSpace);
-
-        /// <summary>
-        /// Only include types from this nameSpace or its children in the scanning operation.  You can
-        /// use multiple Include() calls in a single scanning operation
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        void IncludeNamespaceContainingType<T>();
-
-        /// <summary>
         /// Exclude this specific type from the scanning operation
         /// </summary>
         /// <typeparam name="T"></typeparam>
         void ExcludeType<T>();
 
         /// <summary>
-        /// Adds a registration convention to be applied to all the types in this
-        /// logical "scan" operation
+        /// Only include types matching the Predicate in the scanning operation. You can use multiple
+        /// Include() calls in a single scanning operation
+        /// </summary>
+        /// <param name="predicate"></param>
+        void Include(Func<Type, bool> predicate);
+
+        /// <summary>
+        /// Only include types from this nameSpace or its children in the scanning operation. You can
+        /// use multiple Include() calls in a single scanning operation
+        /// </summary>
+        /// <param name="nameSpace"></param>
+        void IncludeNamespace(string nameSpace);
+
+        /// <summary>
+        /// Only include types from this nameSpace or its children in the scanning operation. You can
+        /// use multiple Include() calls in a single scanning operation
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        void Convention<T>() where T : IRegistrationConvention, new();
+        void IncludeNamespaceContainingType<T>();
 
         /// <summary>
-        /// Adds a registration convention to be applied to all the types in this
-        /// logical "scan" operation
-        /// </summary>
-        void With(IRegistrationConvention convention);
-
-        /// <summary>
-        /// Automatically registers all concrete types without primitive arguments
-        /// against its first interface, if any
+        /// Automatically registers all concrete types without primitive arguments against its first
+        /// interface, if any
         /// </summary>
         void RegisterConcreteTypesAgainstTheFirstInterface();
-        
+
         void TheCallingAssembly();
-        void AssembliesFromApplicationBaseDirectory();
-        void AssembliesFromApplicationBaseDirectory(Func<Assembly, bool> assemblyFilter);
 
-        void AssembliesAndExecutablesFromApplicationBaseDirectory(Func<Assembly, bool> assemblyFilter = null);
-
-        void AssembliesAndExecutablesFromPath(string path);
-        void AssembliesFromPath(string path);
-
-        void AssembliesAndExecutablesFromPath(string path,
-            Func<Assembly, bool> assemblyFilter);
-
-        void AssembliesFromPath(string path,
-            Func<Assembly, bool> assemblyFilter);
+        /// <summary>
+        /// Adds a registration convention to be applied to all the types in this logical "scan" operation
+        /// </summary>
+        void With(IRegistrationConvention convention);
     }
 }
